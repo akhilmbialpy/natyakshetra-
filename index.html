@@ -323,7 +323,7 @@
 <script>
 /* ===== SETTINGS: change only this part ===== */
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRoW1Loe1ceQSvYNtsqsdxEeiQFSpQHEVq0sMQQIzbxzju8nmyKo_AsFJdhX__XiZ8UmBmOT1h3HSI-/pub?gid=15402502&single=true&output=csv";      // Google Sheet > File > Share > Publish to web > CSV link. Empty = demo data
-const APPS_SCRIPT_URL = "";    // later: link that saves Paid / Due marks into the Google Sheet
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvhr1i4aHlBFcs6UG7svkY9k7NdP95W7Fp9dKkqlUy0aAWEDxaADRT8G6HA4AHdsz_/exec";    // Apps Script web app link (…/exec) that saves Paid / Due / Left into the Google Sheet
 const SCHOOL_NAME   = "Natyakshetra Dance Academy";  // used in WhatsApp reminders
 const HEADING       = "Natyakshetra";                 // shown at the top of the first page
 const AGE_LIMIT     = 20;      // below 20 = Girls Batch, 20 and above = Women's Batch
@@ -373,6 +373,42 @@ function loadLeft(){ try{ const o=JSON.parse(localStorage.getItem("nk_left_v1")|
 function saveLeft(){ try{ localStorage.setItem("nk_left_v1",JSON.stringify(left)) }catch(e){} }
 const isLeft=s=>!!left[s.key];
 const msOf=s=>left[s.key]?monthList().filter(m=>m.id<left[s.key]):monthList();   // months that count for this student
+/* ---------- saving to the Google Sheet (Apps Script) ---------- */
+let pending=[];
+function loadPending(){ try{ pending=JSON.parse(localStorage.getItem("nk_pending")||"[]"); if(!Array.isArray(pending)) pending=[]; }catch(e){ pending=[]; } }
+function savePending(){ try{ localStorage.setItem("nk_pending",JSON.stringify(pending)) }catch(e){} }
+function getKey(ask){
+  let k=""; try{ k=localStorage.getItem("nk_key")||""; }catch(e){}
+  if(!k||ask){ k=(prompt("Enter the access key (ask the office)")||"").trim(); try{ localStorage.setItem("nk_key",k) }catch(e){} }
+  return k;
+}
+async function callAPI(method,body){
+  const k=getKey(false);
+  const r=method=="GET"?await fetch(APPS_SCRIPT_URL+"?token="+encodeURIComponent(k))
+    :await fetch(APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...body,token:k})});
+  const j=await r.json();
+  if(j&&j.ok===false&&j.error=="bad key"){ try{ localStorage.removeItem("nk_key") }catch(e){} throw new Error("bad key"); }
+  return j;
+}
+let flushing=false;
+async function flush(){
+  if(flushing) return pending.length==0; flushing=true;
+  try{ while(pending.length){ await callAPI("POST",pending[0]); pending.shift(); savePending(); } return true; }
+  catch(e){ return false; } finally{ flushing=false; }
+}
+function push(item){
+  if(!APPS_SCRIPT_URL) return;
+  pending.push(item); savePending();
+  flush().then(ok=>{ if(!ok) showToast("Not saved to the sheet yet. It will retry."); });
+}
+const syncPay=(s,mid)=>push({action:"setPay",key:s.key,name:s.name,month:mid,rec:(pay[s.key]||{})[mid]||null});
+const syncLeft=s=>push({action:"setLeft",key:s.key,name:s.name,month:left[s.key]||null});
+async function pull(){
+  if(!APPS_SCRIPT_URL) return true;
+  if(!(await flush())) return false;      // own unsent changes go first
+  try{ const j=await callAPI("GET"); if(!j||!j.ok) return false; pay=j.pay||{}; left=j.left||{}; savePay(); saveLeft(); return true; }
+  catch(e){ return false; }
+}
 function savePay(){ try{ localStorage.setItem("nk_pay_v2",JSON.stringify(pay)) }catch(e){} }
 
 /* ---------- months ---------- */
@@ -558,7 +594,7 @@ function renderStudent(){
     return `<button class="mt ${st}" data-m="${m.id}"><span class="m">${m.label}</span><span class="y">${m.year}</span><span class="a">${amt}</span><span class="s">${st.toUpperCase()}</span>${extra?`<span class="d">${extra}</span>`:""}</button>`;
   }).join("");
   $("exNote").textContent=exMs.length?"🚫 Exempted: "+exMs.map(m=>m.label+" "+m.year+(rec[m.id].note?" ("+rec[m.id].note+")":"")).join(", "):"";
-  $("saveNote").innerHTML=APPS_SCRIPT_URL?"":'<div class="note">Marks are saved on this phone only for now. Sheet saving will be added later.</div>';
+  $("saveNote").innerHTML=APPS_SCRIPT_URL?"":'<div class="note">Marks are saved on this phone only for now.</div>';
 }
 $("months").addEventListener("click",e=>{
   const t=e.target.closest(".mt"); if(t&&curStudent) openSheet(t.dataset.m);
@@ -591,12 +627,12 @@ function closeSheet(){ ["backdrop","sheet","doneSheet","stmtSheet","leftSheet"].
 function commit(entry){
   const {s,m,before}=shCtx, r=pay[s.key]||(pay[s.key]={});
   if(entry) r[m.id]=entry; else delete r[m.id];
-  savePay(); applyPaid(); renderStudent(); closeSheet();
+  savePay(); applyPaid(); syncPay(s,m.id); renderStudent(); closeSheet();
   if(entry&&entry.status=="paid"){ openDone(s,m,entry,true); return; }   // paid: offer to tell the parent right away
   const what=entry?(entry.status=="exempt"?"Exempted":"Paid via "+(entry.method=="upi"?"UPI":"Cash")):"Marked Due";
   showToast(m.label+" "+m.year+": "+what,()=>{
     if(before) r[m.id]=before; else delete r[m.id];
-    savePay(); applyPaid(); renderStudent();
+    savePay(); applyPaid(); syncPay(s,m.id); renderStudent();
   });
 }
 document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>setOpt(b.dataset.o));
@@ -818,13 +854,13 @@ $("leftBtn").onclick=openLeft;
 $("lfCancel").onclick=closeSheet;
 $("lfSave").onclick=()=>{
   const s=curStudent, mid=$("lfMonth").value; if(!s||!mid) return;
-  left[s.key]=mid; saveLeft(); closeSheet(); applyPaid();
-  showToast(s.name+" marked as left from "+monthName(mid),()=>{ delete left[s.key]; saveLeft(); applyPaid(); route(); });
+  left[s.key]=mid; saveLeft(); syncLeft(s); closeSheet(); applyPaid();
+  showToast(s.name+" marked as left from "+monthName(mid),()=>{ delete left[s.key]; saveLeft(); syncLeft(s); applyPaid(); route(); });
   nav("left");
 };
 function restoreStudent(s){
-  const was=left[s.key]; delete left[s.key]; saveLeft(); applyPaid(); route();
-  showToast(s.name+" restored",()=>{ left[s.key]=was; saveLeft(); applyPaid(); route(); });
+  const was=left[s.key]; delete left[s.key]; saveLeft(); syncLeft(s); applyPaid(); route();
+  showToast(s.name+" restored",()=>{ left[s.key]=was; saveLeft(); syncLeft(s); applyPaid(); route(); });
 }
 function renderLeft(){
   const l=students.filter(isLeft).sort((a,b)=>a.name.localeCompare(b.name));
@@ -897,13 +933,19 @@ window.addEventListener("popstate",()=>{ curHash=null; route(); });
     let csv=DEMO;
     if(SHEET_CSV_URL){const r=await fetch(SHEET_CSV_URL);csv=await r.text()}
     else $("note").innerHTML='<div class="note">Demo data is showing. Add your Google Sheet link in SHEET_CSV_URL.</div>';
-    students=build(csv); loadPay(); loadLeft(); seedPay(); applyPaid();
+    students=build(csv); loadPay(); loadLeft(); loadPending(); await pull(); seedPay(); applyPaid();
     try{ history.replaceState({app:0},"",location.href) }catch(e){}
     route();
   }catch(e){
     $("home").innerHTML=/^https?:$/.test(location.protocol)?'<div class="empty">Could not load the sheet. Check the link and the internet connection.</div>':'<div class="empty">This file was opened from phone storage, which cannot read the sheet. Open the app from its web link (GitHub Pages).</div>';
   }
 })();
+let hiddenAt=0;
+document.addEventListener("visibilitychange",async()=>{   // coming back to the app: fetch what other staff have saved
+  if(document.hidden){ hiddenAt=Date.now(); return; }
+  if(!APPS_SCRIPT_URL||!students.length||Date.now()-hiddenAt<30000||$("backdrop").classList.contains("show")) return;
+  if(await pull()){ seedPay(); applyPaid(); route(); }
+});
 if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
