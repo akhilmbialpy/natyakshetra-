@@ -132,6 +132,7 @@
   .mt.due .s{background:var(--due);color:var(--card)}
 
   .pill.exempt{background:var(--line);color:var(--muted)}
+  .pill.new{background:var(--field);color:var(--muted);border:1px dashed var(--line)}
   .mt .d{display:block;font-size:.68rem;margin-top:5px;font-weight:600;opacity:.9}
   .mt.exempt{background:var(--field);color:var(--muted);border-color:var(--line);border-style:dashed}
   .mt.exempt .s{background:var(--muted);color:var(--card)}
@@ -171,11 +172,11 @@
   .sm .dot.paid{background:var(--ok)} .sm .dot.exempt{background:var(--muted)}
   .sm.on{border-color:var(--accent);background:var(--accent);color:#fff}
   .sm.on small{color:#fff;opacity:.85}
-  .fld select{width:100%;padding:12px;font-size:1rem;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--text)}
+  .fld select{width:100%;padding:12px;font-size:1rem;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink)}
   .leftbtn,.leftlink{margin-top:12px;background:transparent;color:var(--muted);border:1px dashed var(--line)}
   .leftrow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
   .leftrow .info{flex:1;cursor:pointer}.leftrow .name{font-weight:700}.leftrow .meta{font-size:.8rem;color:var(--muted)}
-  .leftrow button{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:600}
+  .leftrow button{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:600}
   .leftbanner{background:var(--field);border:1px dashed var(--line);color:var(--muted);border-radius:12px;padding:10px 12px;margin-bottom:12px;text-align:center;font-size:.9rem}
   .stcount{font-size:.82rem;color:var(--muted);text-align:center;margin-top:10px}
   .legend{font-size:.72rem;color:var(--muted);text-align:center;margin-top:6px}
@@ -191,6 +192,39 @@
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(30px);opacity:0;pointer-events:none;background:#2b2133;color:#fff;border-radius:14px;padding:11px 16px;font-size:.88rem;display:flex;gap:16px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.35);transition:.25s;z-index:20;max-width:92vw}
   .toast.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
   .toast button{background:none;border:0;color:#ffb3c6;font:inherit;font-weight:700;cursor:pointer;padding:0}
+
+  /* ===== simple look: one accent colour, flat cards, label + value rows ===== */
+  :root{--bg:#f4f4f6;--card:#fff;--ink:#18181b;--muted:#71717a;--line:#e4e4e7;--field:#f4f4f6;
+    --plum:#8f2a3b;--plum-d:#8f2a3b;--rose:#8f2a3b;--note-bg:#f4f4f6;--note-tx:#71717a}
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#0e0e11;--card:#18181c;--ink:#f4f4f5;--muted:#a1a1aa;--line:#2a2a30;--field:#232329;
+      --plum:#e0788a;--plum-d:#e0788a;--rose:#e0788a;--note-bg:#232329;--note-tx:#a1a1aa}
+  }
+  .card,.list,.pick{box-shadow:none}
+  @media (prefers-color-scheme: dark){
+    .btn.call,.dbtn.rc,.sbtns .save,.opt.on,.sm.on,.sm.on small,.chip.on,.girls-page .chip.on{color:#2a0d14}   /* dark text on the light pink buttons */
+  }
+  .sheet:not(.show){box-shadow:none}   /* hidden sheets no longer cast a shadow band at the bottom */
+  header,header.girls,header.home{background:none;color:var(--accent);padding:20px 16px 14px}
+  header h1{color:var(--accent)}
+  header.home h1{font-size:clamp(1.5rem,8vw,2.2rem)}
+  header p{color:var(--muted);opacity:1}
+  .back{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+  .back:active{background:var(--field)}
+  main,body.home-page main{margin:0 auto 40px}
+  .card{border:1px solid var(--line);border-radius:20px;padding:18px}
+  .list{border:1px solid var(--line);border-radius:20px}
+  .tap,.tap.girls{border-left:1px solid var(--line)}
+  .card.total{border-left:1px solid var(--line)}
+  .tap .view,.tap.girls .view{color:var(--accent)}
+  .bar{height:8px}
+  .bar.working i,.bar.girls i{background:var(--accent)}
+  .stat{border:1px solid var(--line)}
+  .mt{border-width:1px}
+  .kv{grid-template-columns:1fr;gap:0}
+  .kv span{font-size:.8rem}
+  .kv b{text-align:left;font-size:1.08rem;padding:2px 0 12px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+  .kv b:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
 </style>
 </head>
 <body>
@@ -214,13 +248,13 @@
       <div class="pending" id="tPending"></div>
     </section>
     <section class="card tap working" onclick="go('working')" role="button" tabindex="0">
-      <div class="pg-top"><b>👩 Women's Batch</b><span id="wCount"></span></div>
+      <div class="pg-top"><b>Women's Batch</b><span id="wCount"></span></div>
       <div class="bar working"><i id="wBar"></i></div>
       <div class="pg-bot"><span id="wAmt"></span><strong id="wPct"></strong></div>
       <div class="view">View students ›</div>
     </section>
     <section class="card tap girls" onclick="go('girls')" role="button" tabindex="0">
-      <div class="pg-top"><b>👧 Girls Batch</b><span id="gCount"></span></div>
+      <div class="pg-top"><b>Girls Batch</b><span id="gCount"></span></div>
       <div class="bar girls"><i id="gBar"></i></div>
       <div class="pg-bot"><span id="gAmt"></span><strong id="gPct"></strong></div>
       <div class="view">View students ›</div>
@@ -328,7 +362,8 @@ const SCHOOL_NAME   = "Natyakshetra Dance Academy";  // used in WhatsApp reminde
 const HEADING       = "Natyakshetra";                 // shown at the top of the first page
 const AGE_LIMIT     = 20;      // below 20 = Girls Batch, 20 and above = Women's Batch
 const FEES = { working: 1000, girls: 600 };           // fee per month
-const START_MONTH = "2026-06"; // first month for which fees are counted (YYYY-MM)
+const NEW_FROM = "2026-11-14";   // students whose form was filled on/after this date are NEW admissions: fee starts the month AFTER joining (earlier ones count from START_MONTH)
+const START_MONTH = "2026-12"; // first month for which fees are counted (YYYY-MM)
 const DATE_ORDER = "DMY";      // "DMY" (dd/mm/yyyy) or "MDY" (mm/dd/yyyy)
 /* ============================================ */
 
@@ -372,7 +407,7 @@ let left={};   // {studentKey:"YYYY-MM"} = first month with no fee
 function loadLeft(){ try{ const o=JSON.parse(localStorage.getItem("nk_left_v1")||"{}"); left=(o&&typeof o=="object")?o:{}; Object.keys(left).forEach(k=>{ if(!/^\d{4}-\d{2}$/.test(left[k])) delete left[k]; }); }catch(e){ left={}; } }
 function saveLeft(){ try{ localStorage.setItem("nk_left_v1",JSON.stringify(left)) }catch(e){} }
 const isLeft=s=>!!left[s.key];
-const msOf=s=>left[s.key]?monthList().filter(m=>m.id<left[s.key]):monthList();   // months that count for this student
+const msOf=s=>monthList().filter(m=>m.id>=s.start&&(!left[s.key]||m.id<left[s.key]));   // months that count for this student
 /* ---------- saving to the Google Sheet (Apps Script) ---------- */
 let pending=[];
 function loadPending(){ try{ pending=JSON.parse(localStorage.getItem("nk_pending")||"[]"); if(!Array.isArray(pending)) pending=[]; }catch(e){ pending=[]; } }
@@ -458,7 +493,7 @@ function build(csv){
   const head=rows[0].map(h=>h.toLowerCase());
   const find=(...k)=>head.findIndex(h=>k.some(x=>h.includes(x)));
   const iStu=head.findIndex(h=>h.includes("student")&&h.includes("name"));   // "Student name" wins over "Parent's name"
-  const iN=iStu>=0?iStu:find("name"),iP=find("whatsapp","phone","mobile","number"),iA=find("address","place"),iD=find("birth","dob"),iPaid=find("paid","status");
+  const iN=iStu>=0?iStu:find("name"),iP=find("whatsapp","phone","mobile","number"),iA=find("address","place"),iD=find("birth","dob"),iPaid=find("paid","status"), iJ=head.findIndex(h=>h.includes("joined"));
   /* a cell may hold two numbers ("99463 71249, 81380 53100"): the first one is used */
   const firstPhone=v=>{
     v=String(v||"");
@@ -472,7 +507,9 @@ function build(csv){
     const batch=(age!==null&&age<AGE_LIMIT)?"girls":"working";
     const flag=iPaid>=0&&/^(yes|y|paid|true|✔|✓)/i.test((r[iPaid]||"").trim());
     const name=(r[iN]||"").replace(/\s+/g," ").trim().toUpperCase(), phone=firstPhone(r[iP]);   // every name in CAPITALS, extra spaces removed
-    return {key:(name+"|"+phone).toLowerCase(),name,phone,address:(r[iA]||"").trim(),age,batch,fee:FEES[batch],flag,paid:false};
+    let start=START_MONTH; const jd=iJ>=0?parseDOB(r[iJ]):null;
+    if(jd&&jd>=new Date(NEW_FROM+"T00:00:00")){ const nm=new Date(jd.getFullYear(),jd.getMonth()+1,1); const id=nm.getFullYear()+"-"+String(nm.getMonth()+1).padStart(2,"0"); if(id>start) start=id; }
+    return {key:(name+"|"+phone).toLowerCase(),name,phone,address:(r[iA]||"").trim(),age,batch,fee:FEES[batch],flag,paid:false,start};
   }).filter(s=>s.name);
 }
 /* first time a student is seen: fill their months (demo = sample history; real sheet = current month from the Paid column) */
@@ -496,7 +533,8 @@ function applyPaid(){
   const cur=monthList().slice(-1)[0];
   students.forEach(s=>{
     const r=(pay[s.key]&&cur)?pay[s.key][cur.id]:null;
-    s.state=(r&&(r.status=="paid"||r.status=="exempt"))?r.status:"due";   // this month: paid | exempt | due
+    s.isNew=!cur||s.start>cur.id;   // before the first fee month, everyone shows as "from <month>"   // joined this month: first fee is next month
+    s.state=s.isNew?"new":((r&&(r.status=="paid"||r.status=="exempt"))?r.status:"due");   // this month: paid | exempt | due | new
     s.paid=s.state=="paid"; s.exempt=s.state=="exempt";
   });
 }
@@ -506,7 +544,7 @@ const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&qu
 
 /* ---------- home ---------- */
 function batchStats(key){
-  const l=students.filter(s=>s.batch==key&&!isLeft(s)&&!s.exempt), paid=l.filter(s=>s.paid);   // exempted students are left out of the totals
+  const l=students.filter(s=>s.batch==key&&!isLeft(s)&&!s.exempt&&!s.isNew), paid=l.filter(s=>s.paid);   // exempted students are left out of the totals
   const tot=l.reduce((a,s)=>a+s.fee,0), col=paid.reduce((a,s)=>a+s.fee,0);
   return {n:l.length,paid:paid.length,tot,col,pct:tot?Math.round(col/tot*100):0};
 }
@@ -516,6 +554,7 @@ function fillBar(prefix,st){
   $(prefix+"Amt").textContent=rupee(st.col)+" of "+rupee(st.tot)+" collected";
 }
 function renderHome(){
+  if(!monthList().length) $("note").innerHTML='<div class="note">Fee tracking starts from <b>'+monthName(START_MONTH)+'</b>. Students will appear here as due from that month.</div>';
   const w=batchStats("working"), g=batchStats("girls");
   fillBar("w",w); fillBar("g",g);
   $("wCount").textContent=w.paid+" / "+w.n+" paid";
@@ -527,7 +566,6 @@ function renderHome(){
   const dark=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches;
   $("tBar").style.background="hsl("+hue+",72%,44%)";
   $("tPct").style.color="hsl("+hue+",72%,"+(dark?62:36)+"%)";
-  $("tCard").style.borderLeftColor="hsl("+hue+",72%,44%)";
   $("tCount").textContent=t.paid+" / "+t.n+" paid";
   $("tPending").textContent="Pending: "+rupee(t.tot-t.col);
   const ln=students.filter(isLeft).length;
@@ -554,7 +592,7 @@ function renderBatch(){
   let html="";
   list.forEach(s=>{
     html+=`<div class="row" data-k="${encodeURIComponent(s.key)}"><div class="line1"><div class="sn">${s.sn}</div><div class="info"><div class="name">${esc(s.name)}</div><div class="meta">${s.age!==null?s.age+" yrs":"Age ?"}${s.address?" · "+esc(s.address):""}</div></div>
-      <div class="fee"><b>${rupee(s.fee)}</b><span class="pill ${s.state}">${s.state.toUpperCase()}</span></div><div class="go">›</div></div></div>`;
+      <div class="fee"><b>${rupee(s.fee)}</b><span class="pill ${s.state}">${s.isNew?"FROM "+MON[+s.start.slice(5)-1].toUpperCase():s.state.toUpperCase()}</span></div><div class="go">›</div></div></div>`;
   });
   $("list").innerHTML=html?`<div class="list">${html}</div>`:'<div class="empty">No students found</div>';
 }
@@ -593,6 +631,8 @@ function renderStudent(){
     const extra=st=="paid"?((r.method?(r.method=="upi"?"UPI":"Cash"):"")+(r.date?(r.method?" · ":"")+fmtDate(r.date):"")):"";
     return `<button class="mt ${st}" data-m="${m.id}"><span class="m">${m.label}</span><span class="y">${m.year}</span><span class="a">${amt}</span><span class="s">${st.toUpperCase()}</span>${extra?`<span class="d">${extra}</span>`:""}</button>`;
   }).join("");
+  if(!ms.length&&!gone) $("months").innerHTML=`<div class="note">${s.start>START_MONTH?"New admission. Fee":"Fee tracking"} starts from <b>${monthName(s.start)}</b>.</div>`;
+  $("stmtBtn").classList.toggle("hidden",!ms.length);
   $("exNote").textContent=exMs.length?"🚫 Exempted: "+exMs.map(m=>m.label+" "+m.year+(rec[m.id].note?" ("+rec[m.id].note+")":"")).join(", "):"";
   $("saveNote").innerHTML=APPS_SCRIPT_URL?"":'<div class="note">Marks are saved on this phone only for now.</div>';
 }
@@ -846,6 +886,7 @@ const monthName=id=>{ const [y,m]=id.split("-").map(Number); return MON[m-1]+" "
 function openLeft(){
   const s=curStudent; if(!s) return;
   const ms=monthList(), cur=ms[ms.length-1];
+  if(!cur){ showToast("Fee tracking starts from "+monthName(START_MONTH)); return; }
   $("lfTitle").textContent="Mark as left · "+s.name;
   $("lfMonth").innerHTML=ms.slice().reverse().map(m=>`<option value="${m.id}" ${m.id==cur.id?"selected":""}>${m.label} ${m.year}</option>`).join("");
   $("backdrop").classList.add("show"); $("leftSheet").classList.add("show");
